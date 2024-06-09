@@ -22,7 +22,7 @@ function run_5_1_4_periodic_beam_free_surface_energy()
     "E_ela_s₀"=>E_ela_s₀,
     "time"=>time
     )
-    @tagsave(file,data)
+    #@tagsave(file,data)
     return data
   end
 
@@ -43,9 +43,10 @@ function run_5_1_4_periodic_beam_free_surface_energy()
     tf=T,
     k=k,
     order=order,
-    vtk_output=false
+    vtk_output=true
   )
-  produce_or_load(path,case,run_5_1_4;digits=8)
+  filename = config -> savename(config; digits=8)
+  produce_or_load(path,case,run_5_1_4; filename=filename)
 
   # parameters
   k  = 15
@@ -66,7 +67,8 @@ function run_5_1_4_periodic_beam_free_surface_energy()
       k=k,
       order=order
     )
-    data, file = produce_or_load(path,case,run_5_1_4;digits=8)
+    filename = config -> savename(config; digits=8)
+    data, file = produce_or_load(path,case,run_5_1_4; filename=filename)
   end
 
   # Time step size Convergence
@@ -83,7 +85,8 @@ function run_5_1_4_periodic_beam_free_surface_energy()
       k=k,
       order=order
     )
-    data, file = produce_or_load(path,case,run_5_1_4;digits=8)
+    filename = config -> savename(config; digits=8)
+    data, file = produce_or_load(path,case,run_5_1_4; filename=filename)
   end
 
   res = collect_results(path)

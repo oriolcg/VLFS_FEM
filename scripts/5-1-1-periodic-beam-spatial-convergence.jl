@@ -13,7 +13,7 @@ function run_5_1_1_periodic_beam_sapatial_convergence()
     file = datadir("5-1-1-periodic-beam-spatial-convergence", case_name_suffix)
     prefix, data, suffix = DrWatson.parse_savename(case_name_suffix, parsetypes=(Int, Float64))
     push!(data, "e_ϕ_i"=>e_ϕ_i, "e_η_i"=>e_η_i)
-    @tagsave(file,data)
+    #@tagsave(file,data)
     return data
   end
 
@@ -35,9 +35,10 @@ function run_5_1_1_periodic_beam_sapatial_convergence()
     k=k,
     orderϕ=order,
     orderη=order,
-    vtk_output=false
+    vtk_output=true
   )
-  produce_or_load(path,case,run_5_1_1;digits=8)
+  filename = config -> savename(config; digits=8)
+  produce_or_load(path,case,run_5_1_1; filename=filename)
 
   # Element size Convergence
   Δt = 1.0e-6
@@ -57,7 +58,8 @@ function run_5_1_1_periodic_beam_sapatial_convergence()
         orderϕ=order,
         orderη=order
       )
-      data, file = produce_or_load(path,case,run_5_1_1;digits=8)
+      filename = config -> savename(config; digits=8)
+      data, file = produce_or_load(path,case,run_5_1_1; filename=filename)
       push!(e_ϕ_n,data["e_ϕ_i"])
       push!(e_η_n,data["e_η_i"])
     end
@@ -87,7 +89,8 @@ function run_5_1_1_periodic_beam_sapatial_convergence()
         orderϕ=2,
         orderη=order
       )
-      data, file = produce_or_load(path,case,run_5_1_1;digits=8)
+      filename = config -> savename(config; digits=8)
+      data, file = produce_or_load(path,case,run_5_1_1; filename=filename)
       push!(e_ϕ_n,data["e_ϕ_i"])
       push!(e_η_n,data["e_η_i"])
     end
