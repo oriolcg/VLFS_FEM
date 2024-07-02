@@ -12,17 +12,23 @@ export Step_params
 
 @with_kw struct Step_params
   name::String = "Step"
-  ω::Real = 0.2
+  ω::Real = 1.5
 end
 
 function run_Step(params::Step_params)
   @unpack name, ω = params
 
   # Fixed parameters
-  m = 500
-  EI = 1.0e10
-  H₀ = 60
-  Lb = 300.0
+  h_ice = 0.1
+  ρ_ice = 917.0
+  m = ρ_ice*h_ice
+  E = 5.0e9
+  ν = 0.33
+  I = h_ice^3/12
+  EI = E*I/(1-ν^2)
+  H₀ = 10.0
+  Lb = 3.0
+  Q = 0.0
 
   # Physics
   g = 9.81
@@ -31,8 +37,8 @@ function run_Step(params::Step_params)
   a₁ = EI/ρ
 
   # wave properties
-  f(k) = sqrt(g*k*tanh(k*H₀)) - ω
-  k = abs(find_zero(f, 0.2))  # wave number
+  κ = 0.4
+  ω = √((EI*κ^4 - Q*κ^2 + 1) * g*κ*tanh(κ*H₀))
   λ = 2*π / k                 # wavelength
   @show λ, λ/Lb
   η₀ = 0.01
@@ -60,25 +66,24 @@ function run_Step(params::Step_params)
   ∇ₙϕd(x) = μ₁ᵢₙ(x)*vzᵢₙ(x)
 
   # Fluid model
-  𝒯_Ω = GmshDiscreteModel("models/floating_ice_coarse.msh")
+  𝒯_Ω = DiscreteModelFromFile("models/floating_ice_coarse.json")
+  println("Model loaded")
 
   # Triangulations
   Ω = Interior(𝒯_Ω)
-  Γ = Boundary(𝒯_Ω,tags=["beam","free_surface","damping_in","damping_out"])
+  Γ = Boundary(𝒯_Ω,tags=["beam","damping_in","damping_out"])
   Γᵢₙ = Boundary(𝒯_Ω,tags="inlet")
   Γb = Boundary(𝒯_Ω,tags="beam")
   Γd1 = Boundary(𝒯_Ω,tags="damping_in")
   Γd2 = Boundary(𝒯_Ω,tags="damping_out")
-  Γf = Boundary(𝒯_Ω,tags="free_surface")
-  Γκ = Boundary(𝒯_Ω,tags=["free_surface","damping_in","damping_out"])
-  Λb = Skeleton(Γb)
+  # Γκ = Boundary(𝒯_Ω,tags=["damping_in","damping_out"])
+  Λb = Skeleton(Γ)
 
   filename = "data/VTKOutput/floating_ice/Step/"*name
   writevtk(Ω,filename*"_O_trian")
   writevtk(Γb,filename*"_Gb_trian")
   writevtk(Γd1,filename*"_Gd1_trian")
   writevtk(Γd2,filename*"_Gd2_trian")
-  writevtk(Γf,filename*"_Gf_trian")
   writevtk(Λb,filename*"_Lb_trian")
 
   # Measures
@@ -87,7 +92,6 @@ function run_Step(params::Step_params)
   dΓb = Measure(Γb,degree)
   dΓd1 = Measure(Γd1,degree)
   dΓd2 = Measure(Γd2,degree)
-  dΓf = Measure(Γf,degree)
   dΓᵢₙ = Measure(Γᵢₙ,degree)
   dΛb = Measure(Λb,degree)
 
@@ -97,26 +101,27 @@ function run_Step(params::Step_params)
   # FE spaces
   reffe = ReferenceFE(lagrangian,Float64,order)
   V_Ω = TestFESpace(Ω, reffe, conformity=:H1, vector_type=Vector{ComplexF64})
-  V_Γκ = TestFESpace(Γκ, reffe, conformity=:H1, vector_type=Vector{ComplexF64})
-  V_Γη = TestFESpace(Γb, reffe, conformity=:H1, vector_type=Vector{ComplexF64})
+  # V_Γκ = TestFESpace(Γκ, reffe, conformity=:H1, vector_type=Vector{ComplexF64})
+  V_Γη = TestFESpace(Γ, reffe, conformity=:H1, vector_type=Vector{ComplexF64})
   U_Ω = TrialFESpace(V_Ω)
-  U_Γκ = TrialFESpace(V_Γκ)
+  # U_Γκ = TrialFESpace(V_Γκ)
   U_Γη = TrialFESpace(V_Γη)
-  X = MultiFieldFESpace([U_Ω,U_Γκ,U_Γη])
-  Y = MultiFieldFESpace([V_Ω,V_Γκ,V_Γη])
+  X = MultiFieldFESpace([U_Ω,U_Γη])
+  Y = MultiFieldFESpace([V_Ω,V_Γη])
 
   # Weak form
   ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
-  a((ϕ,κ,η),(w,u,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
-    ∫(  βₕ*(u + αₕ*w)*(g*κ - im*ω*ϕ) + im*ω*w*κ )dΓf   +
-    ∫(  βₕ*(u + αₕ*w)*(g*κ - im*ω*ϕ) + im*ω*w*κ - μ₂ᵢₙ*κ*w + μ₁ᵢₙ*∇ₙ(ϕ)*(u + αₕ*w) )dΓd1    +
-    ∫(  βₕ*(u + αₕ*w)*(g*κ - im*ω*ϕ) + im*ω*w*κ - μ₂ₒᵤₜ*κ*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*(u + αₕ*w) )dΓd2    +
+  a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
+    ∫( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
+    ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2    +
     ∫(  ( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓb  +
     ∫(  a₁ * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
-  l((w,u,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*(u + αₕ*w) )dΓd1
+  l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
 
   op = AffineFEOperator(a,l,X,Y)
-  (ϕₕ,κₕ,ηₕ) = Gridap.solve(op)
+  println("Operator created")
+  (ϕₕ,ηₕ) = Gridap.solve(op)
+  println("Operator solved")
 
   xy_cp = get_cell_points(get_fe_dof_basis(V_Γη)).cell_phys_point
   x_cp = [[xy_ij[1] for xy_ij in xy_i] for xy_i in xy_cp]
@@ -127,8 +132,8 @@ function run_Step(params::Step_params)
   xs = [(x_i-6*Lb)/Lb for x_i in vcat(x_cp_sorted...)]
   η_rel_xs = [abs(η_i)/η₀ for η_i in vcat(η_cdv_sorted...)]
 
-  writevtk(Γκ,filename*"_kappa",cellfields=["eta_re"=>real(κₕ),"eta_im"=>imag(κₕ)])
-  writevtk(Γb,filename*"_eta",cellfields=["eta_re"=>real(ηₕ),"eta_im"=>imag(ηₕ)])
+  # writevtk(Γκ,filename*"_kappa",cellfields=["eta_re"=>real(κₕ),"eta_im"=>imag(κₕ)])
+  writevtk(Γ,filename*"_eta",cellfields=["eta_re"=>real(ηₕ),"eta_im"=>imag(ηₕ)])
   writevtk(Ω,filename*"_phi",cellfields=["phi_re"=>real(ϕₕ),"phi_im"=>imag(ϕₕ)])
 
   return (xs,η_rel_xs)
