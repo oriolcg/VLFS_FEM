@@ -37,8 +37,8 @@ function run_Step(params::Step_params)
   a₁ = EI/ρ
 
   # wave properties
-  κ = 0.4
-  ω = √((EI*κ^4 - Q*κ^2 + 1) * g*κ*tanh(κ*H₀))
+  k = 0.4
+  ω = √((EI*k^4 - Q*k^2 + 1) * g*k*tanh(k*H₀))
   λ = 2*π / k                 # wavelength
   @show λ, λ/Lb
   η₀ = 0.01
