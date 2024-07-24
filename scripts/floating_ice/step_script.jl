@@ -3,19 +3,22 @@ function run_tmp_Step()
   case = Step_params(ω=0.2,name="Step")
   x,η = run_Step(case)
 
-  # # Define execution function
-  # function run_tmp_step(case::Step_params)
-  #   case_name = savename(case)
-  #   println("-------------")
-  #   println("Case: ",case_name)
-  #   x,η = run_Step(case)
-  #   case_name_suffix = savename(case,"jld2";digits=8)
-  #   file = datadir("5-3-1-Liu", case_name_suffix)
-  #   prefix,data,suffix = DrWatson.parse_savename(case_name_suffix,parsetypes=(Int, Float64))
-  #   push!(data,"x"=>x, "η"=>η)
-  #   save(file,data)
-  #   return data
-  # end
+  # Define execution function
+  function run_tmp_step(case::Step_params)
+    case_name = savename(case)
+    println("-------------")
+    println("Case: ",case_name)
+    x,η = run_Step(case)
+    case_name_suffix = savename(case,"jld2";digits=8)
+    file = datadir("floating_ice_output", case_name_suffix)
+    file = datadir("floating_ice_output", case_name_suffix)
+    prefix,data,suffix = DrWatson.parse_savename(case_name_suffix,parsetypes=(Int, Float64))
+    push!(data,"x"=>x, "η"=>η)
+    save(file,data)
+    return data
+  end
+
+
 
   # # Case 1: ω=0.4
   # path = datadir("5-3-1-Liu")
