@@ -12,11 +12,11 @@ export Step_params
 
 @with_kw struct Step_params
   name::String = "Step"
-  ω::Real = 1.5
+  k::Real = 0.4
 end
 
 function run_Step(params::Step_params)
-  @unpack name, ω = params
+  @unpack name, k = params
 
   # Fixed parameters
   h_ice = 0.1
@@ -37,13 +37,12 @@ function run_Step(params::Step_params)
   a₁ = EI/ρ
 
   # wave properties
-  k = 0.4
   ω = √((EI*k^4 - Q*k^2 + 1) * g*k*tanh(k*H₀))
   λ = 2*π / k                 # wavelength
   @show λ, λ/Lb
   η₀ = 0.01
   ηᵢₙ(x) = η₀*exp(im*k*x[1])
-  ϕᵢₙ(x) = -im*(η₀*ω/k)*(cosh(k*(x[2]+0.075*Lb)) / sinh(k*H₀))*exp(im*k*x[1])
+  ϕᵢₙ(x) = -im*(η₀*ω/k)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
   vᵢₙ(x) = (η₀*ω)*(cosh(k*(x[2]+0.075*Lb)) / sinh(k*H₀))*exp(im*k*x[1])
   vzᵢₙ(x) = -im*ω*η₀*exp(im*k*x[1])
 
@@ -117,6 +116,18 @@ function run_Step(params::Step_params)
     ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓb  +
     ∫(  a₁ * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
   l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
+
+
+  # # Weak form (bending + tensile force)
+  # ## d₀ = m/ρ,  a₁ = EI/ρ,  a2 = Q/ρ, 
+  # ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
+  # a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
+  #   ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + (a₁)*Δ(v)*Δ(η) + Tᵨ*∇(v)⋅∇(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
+  #   ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
+  #   ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓb  +
+  #   ∫(  a₁ * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb +
+  #   ∫(  a2 * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
+  # l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
 
   op = AffineFEOperator(a,l,X,Y)
   println("Operator created")
