@@ -26,7 +26,7 @@ function run_Step(params::Step_params)
   ν = 0.33
   I = h_ice^3/12
   EI = E*I/(1-ν^2)
-  H₀ = 10.0             
+  H₀ = 10.0
   Lb = 3.0
   Q = 0.0
 
@@ -43,7 +43,7 @@ function run_Step(params::Step_params)
   η₀ = 0.01
   ηᵢₙ(x) = η₀*exp(im*k*x[1])
   ϕᵢₙ(x) = -im*(η₀*ω/k)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
-  vᵢₙ(x) = (η₀*ω)*(cosh(k*(x[2]+0.075*Lb)) / sinh(k*H₀))*exp(im*k*x[1])
+  vᵢₙ(x) = (η₀*ω)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
   vzᵢₙ(x) = -im*ω*η₀*exp(im*k*x[1])
 
   # Numerics constants
@@ -119,7 +119,7 @@ function run_Step(params::Step_params)
 
 
   # # Weak form (bending + tensile force)
-  # ## d₀ = m/ρ,  a₁ = EI/ρ,  a2 = Q/ρ, 
+  # ## d₀ = m/ρ,  a₁ = EI/ρ,  a2 = Q/ρ,
   # ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
   # a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
   #   ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + (a₁)*Δ(v)*Δ(η) + Tᵨ*∇(v)⋅∇(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
@@ -134,7 +134,7 @@ function run_Step(params::Step_params)
   (ϕₕ,ηₕ) = Gridap.solve(op)
   println("Operator solved")
 
-  xy_cp = get_cell_points(get_fe_dof_basis(V_Γη)).cell_phys_point            
+  xy_cp = get_cell_points(get_fe_dof_basis(V_Γη)).cell_phys_point
   x_cp = [[xy_ij[1] for xy_ij in xy_i] for xy_i in xy_cp]
   η_cdv = get_cell_dof_values(ηₕ)
   p = sortperm(x_cp[1])
