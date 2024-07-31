@@ -17,13 +17,11 @@ function run_tmp_Step()
     return data
   end
 
-
-
-  # # Case 1: ω=0.4
-  # path = datadir("5-3-1-Liu")
-  # case = Liu_params(ω=0.4,name="omega-04")
+  # # Case 1: k=0.2
+  # path = datadir("floating/Step")
+  # case = Step_params(k=0.2,name="step=0.5-Q=0-k=0.2")
   # @show case
-  # data, file = produce_or_load(path,case,run_5_3_1)
+  # data, file = produce_or_load(path,case,run_tmp_step)
 
   # # Case 2: ω=0.8
   # case = Liu_params(ω=0.8,name="omega-08")
@@ -31,7 +29,8 @@ function run_tmp_Step()
   # data, file = produce_or_load(path,case,run_5_3_1)
 
   # # Gather data
-  # res = collect_results(path)
+  # res = collect_results(path)]
+  
 
   # # Reference data
   # Liu_data_04 = CSV.File(datadir("Ref_data/Liu","omega_04.csv");header=false)

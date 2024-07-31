@@ -27,8 +27,10 @@ function run_Step(params::Step_params)
   I = h_ice^3/12
   EI = E*I/(1-ν^2)
   H₀ = 10.0
-  Lb = 3.0
+  Lb = 60
+  # Lb = 70
   Q = 0.0
+
 
   # Physics
   g = 9.81
@@ -48,15 +50,18 @@ function run_Step(params::Step_params)
 
   # Numerics constants
   order = 4
-  h = Lb/50
+  h = 1/Lb
   γ = 1.0*order*(order-1)/h
   βₕ = 0.5
   αₕ = -im*ω/g * (1-βₕ)/βₕ
 
   # Damping [method 5 (added terms dyn BC and kin BC), ramp function shape 1 - Kim(2014)]
   μ₀ = 6.0
-  Ld = 4*Lb
-  xdₒᵤₜ = 9*Lb
+  Ld = 1.5*Lb
+  xdₒᵤₜ = 2.5*Lb
+  # Ld = 2*Lb
+  # xdₒᵤₜ = 3*Lb
+
   μ₁ᵢₙ(x) = μ₀*(1.0 - sin(π/2*(x[1])/Ld))
   μ₁ₒᵤₜ(x) = μ₀*(1.0 - cos(π/2*(x[1]-xdₒᵤₜ)/Ld))
   μ₂ᵢₙ(x) = μ₁ᵢₙ(x)*k
@@ -65,7 +70,8 @@ function run_Step(params::Step_params)
   ∇ₙϕd(x) = μ₁ᵢₙ(x)*vzᵢₙ(x)
 
   # Fluid model
-  𝒯_Ω = DiscreteModelFromFile("models/floating_ice_coarse.json")
+  # 𝒯_Ω = DiscreteModelFromFile("models/floating_ice_coarse.json")
+  𝒯_Ω = DiscreteModelFromFile("models/floating_ice_modified2_step50.json")
   println("Model loaded")
 
   # Triangulations
@@ -123,10 +129,10 @@ function run_Step(params::Step_params)
   # ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
   # a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
   #   ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + (a₁)*Δ(v)*Δ(η) + Tᵨ*∇(v)⋅∇(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
-  #   ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
-  #   ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓb  +
+  #   ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + Tᵨ*∇(v)⋅∇(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
+  #   ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) )+ Tᵨ*∇(v)⋅∇(η) +  im*ω*w*η  )dΓb  +
   #   ∫(  a₁ * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb +
-  #   ∫(  a2 * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
+  #
   # l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
 
   op = AffineFEOperator(a,l,X,Y)
