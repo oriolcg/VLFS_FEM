@@ -27,8 +27,10 @@ function run_Step(params::Step_params)
   I = h_ice^3/12
   EI = E*I/(1-ν^2)
   H₀ = 10.0             
-  Lb = 3.0
+  Lb = 60
+  # Lb = 70
   Q = 0.0
+
 
   # Physics
   g = 9.81
@@ -43,20 +45,23 @@ function run_Step(params::Step_params)
   η₀ = 0.01
   ηᵢₙ(x) = η₀*exp(im*k*x[1])
   ϕᵢₙ(x) = -im*(η₀*ω/k)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
-  vᵢₙ(x) = (η₀*ω)*(cosh(k*(x[2]+0.075*Lb)) / sinh(k*H₀))*exp(im*k*x[1])
+  vᵢₙ(x) = (η₀*ω)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
   vzᵢₙ(x) = -im*ω*η₀*exp(im*k*x[1])
 
   # Numerics constants
   order = 4
-  h = Lb/50
+  h = 1/Lb
   γ = 1.0*order*(order-1)/h
   βₕ = 0.5
   αₕ = -im*ω/g * (1-βₕ)/βₕ
 
   # Damping [method 5 (added terms dyn BC and kin BC), ramp function shape 1 - Kim(2014)]
   μ₀ = 6.0
-  Ld = 4*Lb
-  xdₒᵤₜ = 9*Lb
+  Ld = 1.5*Lb
+  xdₒᵤₜ = 2.5*Lb  
+  # Ld = 2*Lb
+  # xdₒᵤₜ = 3*Lb
+
   μ₁ᵢₙ(x) = μ₀*(1.0 - sin(π/2*(x[1])/Ld))
   μ₁ₒᵤₜ(x) = μ₀*(1.0 - cos(π/2*(x[1]-xdₒᵤₜ)/Ld))
   μ₂ᵢₙ(x) = μ₁ᵢₙ(x)*k
@@ -65,7 +70,8 @@ function run_Step(params::Step_params)
   ∇ₙϕd(x) = μ₁ᵢₙ(x)*vzᵢₙ(x)
 
   # Fluid model
-  𝒯_Ω = DiscreteModelFromFile("models/floating_ice_coarse.json")
+  # 𝒯_Ω = DiscreteModelFromFile("models/floating_ice_coarse.json")
+  𝒯_Ω = DiscreteModelFromFile("models/floating_ice_modified2_step50.json")
   println("Model loaded")
 
   # Triangulations
