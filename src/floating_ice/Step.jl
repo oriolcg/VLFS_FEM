@@ -122,8 +122,7 @@ function run_Step(params::Step_params)
   Y = MultiFieldFESpace([V_Ω,V_Γη])
 
   # Weak form
-  # a₁ = 0.0
-  # d₀ = 0.0
+
   ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
   a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
   # ∫(  βₕ*(v + αₕ*w)*(g*η - im*ω*ϕ) + im*ω*w*η )dΓb   +
