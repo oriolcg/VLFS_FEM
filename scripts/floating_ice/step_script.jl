@@ -2,7 +2,7 @@ function run_tmp_Step()
   case = Step_params(k=0.2,name="Step")
   x,η = run_Step(case)
   case = Step_params(
-    k=0.5,
+    k=0.3,
     Lb = 70.0,
     Ld_Lb = 2.0,
     xdₒᵤₜ_Lb= 3.0,
