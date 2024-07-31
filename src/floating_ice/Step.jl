@@ -13,10 +13,14 @@ export Step_params
 @with_kw struct Step_params
   name::String = "Step"
   k::Real = 0.4
+  mesh_file::String = "floating_ice_coarse.json"
+  Lb::Float64 = 60.0
+  xdₒᵤₜ_Lb::Float64 = 2.5
+  Ld_Lb::Float64 = 1.5
 end
 
 function run_Step(params::Step_params)
-  @unpack name, k = params
+  @unpack name, k, mesh_file, Lb, Ld_Lb, xdₒᵤₜ_Lb = params
 
   # Fixed parameters
   h_ice = 0.1
@@ -27,7 +31,7 @@ function run_Step(params::Step_params)
   I = h_ice^3/12
   EI = E*I/(1-ν^2)
   H₀ = 10.0
-  Lb = 60
+  # Lb = 60
   # Lb = 70
   Q = 0.0
 
@@ -37,28 +41,30 @@ function run_Step(params::Step_params)
   ρ = 1025
   d₀ = m/ρ
   a₁ = EI/ρ
+  a₂ = Q/ρ
 
   # wave properties
-  ω = √((EI*k^4 - Q*k^2 + 1) * g*k*tanh(k*H₀))
+  ω = √((a₁*k^4 - a₂*k^2 + 1) * g*k*tanh(k*H₀))
   λ = 2*π / k                 # wavelength
-  @show λ, λ/Lb
+  @show λ, λ/Lb, ω
   η₀ = 0.01
   ηᵢₙ(x) = η₀*exp(im*k*x[1])
   ϕᵢₙ(x) = -im*(η₀*ω/k)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
   vᵢₙ(x) = (η₀*ω)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
   vzᵢₙ(x) = -im*ω*η₀*exp(im*k*x[1])
+  ∇ϕᵢₙ(x) = VectorValue(k*(η₀*ω/k)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1]), -im*(η₀*ω)*(sinh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1]))
 
   # Numerics constants
   order = 4
   h = 1/Lb
-  γ = 1.0*order*(order-1)/h
+  γ = 100.0*order*(order-1)/h
   βₕ = 0.5
   αₕ = -im*ω/g * (1-βₕ)/βₕ
 
   # Damping [method 5 (added terms dyn BC and kin BC), ramp function shape 1 - Kim(2014)]
-  μ₀ = 6.0
-  Ld = 1.5*Lb
-  xdₒᵤₜ = 2.5*Lb
+  μ₀ = 1000000.0
+  Ld = Ld_Lb*Lb
+  xdₒᵤₜ = xdₒᵤₜ_Lb*Lb
   # Ld = 2*Lb
   # xdₒᵤₜ = 3*Lb
 
@@ -70,8 +76,8 @@ function run_Step(params::Step_params)
   ∇ₙϕd(x) = μ₁ᵢₙ(x)*vzᵢₙ(x)
 
   # Fluid model
-  # 𝒯_Ω = DiscreteModelFromFile("models/floating_ice_coarse.json")
-  𝒯_Ω = DiscreteModelFromFile("models/floating_ice_modified2_step50.json")
+  𝒯_Ω = DiscreteModelFromFile("models/"*mesh_file)
+  # 𝒯_Ω = DiscreteModelFromFile("models/floating_ice_modified2_step50.json")
   println("Model loaded")
 
   # Triangulations
@@ -95,6 +101,7 @@ function run_Step(params::Step_params)
   degree = 2*order
   dΩ = Measure(Ω,degree)
   dΓb = Measure(Γb,degree)
+  dΓ = Measure(Γ,degree)
   dΓd1 = Measure(Γd1,degree)
   dΓd2 = Measure(Γd2,degree)
   dΓᵢₙ = Measure(Γᵢₙ,degree)
@@ -115,13 +122,19 @@ function run_Step(params::Step_params)
   Y = MultiFieldFESpace([V_Ω,V_Γη])
 
   # Weak form
+  # a₁ = 0.0
+  # d₀ = 0.0
   ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
   a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
-    ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
-    ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
-    ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓb  +
+  # ∫(  βₕ*(v + αₕ*w)*(g*η - im*ω*ϕ) + im*ω*w*η )dΓb   +
+  # ∫(  βₕ*(v + αₕ*w)*(g*η - im*ω*ϕ) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*(v + αₕ*w) )dΓd1    +
+  # ∫(  βₕ*(v + αₕ*w)*(g*η - im*ω*ϕ) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*(v + αₕ*w) )dΓd2    +
+  ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
+  ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
+  ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓb  +
+    # ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓ  +
     ∫(  a₁ * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
-  l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
+  l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*(v + αₕ*w) )dΓd1
 
 
   # # Weak form (bending + tensile force)

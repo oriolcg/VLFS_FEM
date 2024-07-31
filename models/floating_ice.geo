@@ -45,7 +45,7 @@ Physical Point("bottom") = {1, 2, 3, 4};
 //+
 Physical Curve("beam") = {7, 6};
 //+
-Physical Curve("bottom") += {1, 2, 3};
+Physical Curve("bottom") = {1, 2, 3};
 //+
 Physical Curve("inlet") = {9};
 //+

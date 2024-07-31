@@ -1,6 +1,13 @@
 function run_tmp_Step()
   case = Step_params(k=0.2,name="Step")
   x,η = run_Step(case)
+  case = Step_params(
+    k=0.5,
+    Lb = 70.0,
+    Ld_Lb = 2.0,
+    xdₒᵤₜ_Lb= 3.0,
+    name="Step",mesh_file="floating_ice_modified_step50.json")
+  x,η = run_Step(case)
 
   # Define execution function
   function run_tmp_step(case::Step_params)
@@ -30,7 +37,7 @@ function run_tmp_Step()
 
   # # Gather data
   # res = collect_results(path)]
-  
+
 
   # # Reference data
   # Liu_data_04 = CSV.File(datadir("Ref_data/Liu","omega_04.csv");header=false)
