@@ -1,12 +1,11 @@
 function run_tmp_Step()
-  case = Step_params(k=1,name="Step")
-  x,η = run_Step(case)
   case = Step_params(
-    k=1,
-    Lb = 70.0,
-    Ld_Lb = 2,
-    xdₒᵤₜ_Lb= 3,
-    name="Step",mesh_file="floating_ice_modified_step50.json")
+    k=0.2,
+    T=0.5, 
+    Lb = 2*62.84,
+    Ld = 62.84,
+    xdₒᵤₜ = 3*62.84,
+    name="Step",mesh_file="floating_ice-step_ratio05.json")
   x,η = run_Step(case)
 
   # Define execution function
@@ -24,11 +23,36 @@ function run_tmp_Step()
     return data
   end
 
-  # # Case 1: k=0.2
-  # path = datadir("floating/Step")
-  # case = Step_params(k=0.2,name="step=0.5-Q=0-k=0.2")
+  # # Case 1: depth_ratio=0.5  Q=0  k=0.4 
+  # path = datadir("floating_ice")
+  # case = Step_params(
+  #   k=0.4,
+  #   Lb = 70.0,
+  #   Ld_Lb = 2,
+  #   xdₒᵤₜ_Lb= 3,
+  #   name="Step-mod-05-Q0-k04",mesh_file="floating_ice-step_ratio05.json")
   # @show case
   # data, file = produce_or_load(path,case,run_tmp_step)
+
+
+
+
+
+
+
+
+
+
+  # # Case 2: depth_ratio=0.5  Q=0  k=0.4 
+  # case = Step_params(
+  #   k=0.4,
+  #   Lb = 70.0,
+  #   Ld_Lb = 2,
+  #   xdₒᵤₜ_Lb= 3,
+  #   name="Step05-Q0-k04",mesh_file="floating_ice_modified_step50.json")
+  # @show case
+  # data, file = produce_or_load(path,case,run_tmp_step)
+
 
   # # Case 2: ω=0.8
   # case = Liu_params(ω=0.8,name="omega-08")

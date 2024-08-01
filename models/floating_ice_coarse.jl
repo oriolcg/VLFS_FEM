@@ -8,7 +8,7 @@ using GridapGmsh
 # end
 # infilename = joinpath(@__DIR__,"floating_ice_coarse.msh")
 # outfilename = joinpath(@__DIR__,"floating_ice_coarse.json")
-infilename = joinpath(@__DIR__,"floating_ice_modified_step50.msh")
-outfilename = joinpath(@__DIR__,"floating_ice_modified_step50.json")
+infilename = joinpath(@__DIR__,"floating_ice-step_ratio05.msh")
+outfilename = joinpath(@__DIR__,"floating_ice-step_ratio05.json")
 model = GmshDiscreteModel(infilename)
 to_json_file(model,outfilename)

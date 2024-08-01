@@ -13,14 +13,15 @@ export Step_params
 @with_kw struct Step_params
   name::String = "Step"
   k::Real = 0.4
+  T::Float64 = 0.5
   mesh_file::String = "floating_ice_coarse.json"
-  Lb::Float64 = 60.0
-  xdₒᵤₜ_Lb::Float64 = 2.5
-  Ld_Lb::Float64 = 1.5
+  Lb::Float64 = 125.68
+  Ld::Float64 = 62.84
+  xdₒᵤₜ::Float64 = 188.52
 end
 
 function run_Step(params::Step_params)
-  @unpack name, k, mesh_file, Lb, Ld_Lb, xdₒᵤₜ_Lb = params
+  @unpack name, k, T, mesh_file, Lb, Ld, xdₒᵤₜ = params
 
   # Fixed parameters
   h_ice = 0.1
@@ -31,15 +32,15 @@ function run_Step(params::Step_params)
   I = h_ice^3/12
   EI = E*I/(1-ν^2)
   H₀ = 10.0
-  Q = 0.0
+  
 
 
   # Physics
   g = 9.81
   ρ = 1025
-  d₀ = m/ρ
-  a₁ = EI/ρ
-  a₂ = Q/ρ
+  d₀ = m/(ρ*g)
+  a₁ = EI/(ρ*g)
+  a₂ = T*√a₁                 # a₂ => Q = 1.4*√D with D = EI/ρg        
 
   # wave properties
   ω = √((a₁*k^4 - a₂*k^2 + 1) * g*k*tanh(k*H₀))
@@ -61,10 +62,6 @@ function run_Step(params::Step_params)
 
   # Damping [method 5 (added terms dyn BC and kin BC), ramp function shape 1 - Kim(2014)]
   μ₀ = 1000000.0
-  Ld = Ld_Lb*Lb
-  xdₒᵤₜ = xdₒᵤₜ_Lb*Lb
-
-
   μ₁ᵢₙ(x) = μ₀*(1.0 - sin(π/2*(x[1])/Ld))
   μ₁ₒᵤₜ(x) = μ₀*(1.0 - cos(π/2*(x[1]-xdₒᵤₜ)/Ld))
   μ₂ᵢₙ(x) = μ₁ᵢₙ(x)*k
@@ -118,31 +115,48 @@ function run_Step(params::Step_params)
   X = MultiFieldFESpace([U_Ω,U_Γη])
   Y = MultiFieldFESpace([V_Ω,V_Γη])
 
-  # Weak form
 
+
+  # # Weak form - only bending
+  # ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
+  # a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
+  # # ∫(  βₕ*(v + αₕ*w)*(g*η - im*ω*ϕ) + im*ω*w*η )dΓb   +
+  # # ∫(  βₕ*(v + αₕ*w)*(g*η - im*ω*ϕ) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*(v + αₕ*w) )dΓd1    +
+  # # ∫(  βₕ*(v + αₕ*w)*(g*η - im*ω*ϕ) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*(v + αₕ*w) )dΓd2    +
+  # ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
+  # ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
+  # ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓb  +
+  #   # ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓ  +
+  #   ∫(  a₁ * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
+  # l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
+
+
+
+  # # Weak form - only bending
+  # ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
+  # a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
+  # ∫(  v*((-ω^2*d₀ + 1)*η - (im*ω)/g*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
+  # ∫(  v*((-ω^2*d₀ + 1)*η - (im*ω)/g*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
+  # ∫(( v*((-ω^2*d₀ + 1)*η - (im*ω)/g*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓb  +
+  # ∫(  a₁ * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
+  # l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
+
+
+
+
+
+  # Weak form (bending + tensile force)
   ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
   a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
-  # ∫(  βₕ*(v + αₕ*w)*(g*η - im*ω*ϕ) + im*ω*w*η )dΓb   +
-  # ∫(  βₕ*(v + αₕ*w)*(g*η - im*ω*ϕ) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*(v + αₕ*w) )dΓd1    +
-  # ∫(  βₕ*(v + αₕ*w)*(g*η - im*ω*ϕ) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*(v + αₕ*w) )dΓd2    +
-  ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
-  ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
-  ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓb  +
-    # ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓ  +
-    ∫(  a₁ * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
+  ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
+  ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
+  ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η  )dΓb  +
+  ∫(  a₁*( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
   l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
 
 
-  # # Weak form (bending + tensile force)
-  # ## d₀ = m/ρ,  a₁ = EI/ρ,  a2 = Q/ρ,
-  # ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
-  # a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
-  #   ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + (a₁)*Δ(v)*Δ(η) + Tᵨ*∇(v)⋅∇(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
-  #   ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + Tᵨ*∇(v)⋅∇(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
-  #   ∫(( v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) )+ Tᵨ*∇(v)⋅∇(η) +  im*ω*w*η  )dΓb  +
-  #   ∫(  a₁ * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb +
-  #
-  # l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
+
+
 
   op = AffineFEOperator(a,l,X,Y)
   println("Operator created")
