@@ -31,8 +31,6 @@ function run_Step(params::Step_params)
   I = h_ice^3/12
   EI = E*I/(1-ν^2)
   H₀ = 10.0
-  # Lb = 60
-  # Lb = 70
   Q = 0.0
 
 
@@ -65,8 +63,7 @@ function run_Step(params::Step_params)
   μ₀ = 1000000.0
   Ld = Ld_Lb*Lb
   xdₒᵤₜ = xdₒᵤₜ_Lb*Lb
-  # Ld = 2*Lb
-  # xdₒᵤₜ = 3*Lb
+
 
   μ₁ᵢₙ(x) = μ₀*(1.0 - sin(π/2*(x[1])/Ld))
   μ₁ₒᵤₜ(x) = μ₀*(1.0 - cos(π/2*(x[1]-xdₒᵤₜ)/Ld))
@@ -77,7 +74,6 @@ function run_Step(params::Step_params)
 
   # Fluid model
   𝒯_Ω = DiscreteModelFromFile("models/"*mesh_file)
-  # 𝒯_Ω = DiscreteModelFromFile("models/floating_ice_modified2_step50.json")
   println("Model loaded")
 
   # Triangulations
@@ -89,6 +85,7 @@ function run_Step(params::Step_params)
   Γd2 = Boundary(𝒯_Ω,tags="damping_out")
   # Γκ = Boundary(𝒯_Ω,tags=["damping_in","damping_out"])
   Λb = Skeleton(Γ)
+
 
   filename = "data/VTKOutput/floating_ice/Step/"*name
   writevtk(Ω,filename*"_O_trian")

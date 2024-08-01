@@ -35,3 +35,4 @@ Manifest.toml
 # Folders
 output/
 sims_*/
+data/
