@@ -1,7 +1,7 @@
 function run_tmp_Step()
   case = Step_params(
-    k=0.2,
-    T=0.5, 
+    k=0.4,
+    T=0.0, 
     Lb = 2*62.84,
     Ld = 62.84,
     xdₒᵤₜ = 3*62.84,

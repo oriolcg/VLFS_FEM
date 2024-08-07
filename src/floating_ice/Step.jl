@@ -13,14 +13,15 @@ export Step_params
 @with_kw struct Step_params
   name::String = "Step"
   k::Real = 0.4
-  T::Float64 = 0.5
-  mesh_file::String = "floating_ice_coarse.json"
+  T::Float64 = 0.0
+  mesh_file::String = "floating_ice-step_ratio05.json"
   Lb::Float64 = 125.68
   Ld::Float64 = 62.84
   xdₒᵤₜ::Float64 = 188.52
 end
 
 function run_Step(params::Step_params)
+
   @unpack name, k, T, mesh_file, Lb, Ld, xdₒᵤₜ = params
 
   # Fixed parameters
@@ -132,36 +133,22 @@ function run_Step(params::Step_params)
 
 
 
-  # # Weak form - only bending
-  # ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
-  # a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
-  # ∫(  v*((-ω^2*d₀ + 1)*η - (im*ω)/g*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
-  # ∫(  v*((-ω^2*d₀ + 1)*η - (im*ω)/g*ϕ) + a₁*Δ(v)*Δ(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
-  # ∫(( v*((-ω^2*d₀ + 1)*η - (im*ω)/g*ϕ) + a₁*Δ(v)*Δ(η) ) +  im*ω*w*η  )dΓb  +
-  # ∫(  a₁ * ( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
-  # l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
-
-
-
-
-
   # Weak form (bending + tensile force)
   ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
   a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
-  ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
-  ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
-  ∫(  v*((-ω^2*d₀ + g)*η - im*ω*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η  )dΓb  +
+  ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
+  ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
+  ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η  )dΓb  +
   ∫(  a₁*( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
   l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
 
 
-
-
-
+  # solver
   op = AffineFEOperator(a,l,X,Y)
   println("Operator created")
   (ϕₕ,ηₕ) = Gridap.solve(op)
   println("Operator solved")
+
 
   xy_cp = get_cell_points(get_fe_dof_basis(V_Γη)).cell_phys_point
   x_cp = [[xy_ij[1] for xy_ij in xy_i] for xy_i in xy_cp]
@@ -172,6 +159,21 @@ function run_Step(params::Step_params)
   xs = [(x_i-6*Lb)/Lb for x_i in vcat(x_cp_sorted...)]
   η_rel_xs = [abs(η_i)/η₀ for η_i in vcat(η_cdv_sorted...)]
 
+
+  ## probes
+  x_coord_step = Ld + 0.5*Lb
+  prbx = [(x_coord_step - 1.5*λ), (x_coord_step - 1.3*λ), (x_coord_step - λ), (x_coord_step + λ)]
+  prbxy = [Point.(prbx, 0.0) for prbx in prbx]
+  prbxy = [prbxy[4]]      
+
+  ## Κᵣ and Κₜ coefficients
+  # η_prb = [η_i[p_prb] for η_i in η_cdv]
+  # Κₜ = [(abs(η_i)^2)/(η₀^2) for η_i in vcat(η_prb...)]
+  η_prb = ηₕ.(prbxy)
+  @show Κₜ = (abs.(η_prb))/(η₀)
+  Κᵣ = sqrt.(1 .- Κₜ.^2)
+
+  # exporting VTK output
   # writevtk(Γκ,filename*"_kappa",cellfields=["eta_re"=>real(κₕ),"eta_im"=>imag(κₕ)])
   writevtk(Γ,filename*"_eta",cellfields=["eta_re"=>real(ηₕ),"eta_im"=>imag(ηₕ)])
   writevtk(Ω,filename*"_phi",cellfields=["phi_re"=>real(ϕₕ),"phi_im"=>imag(ϕₕ)])
