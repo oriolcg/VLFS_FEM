@@ -46,7 +46,7 @@ function run_Step(params::Step_params)
   # wave properties
   ω = √((a₁*k^4 - a₂*k^2 + 1) * g*k*tanh(k*H₀))
   λ = 2*π / k                 # wavelength
-  @show λ, λ/Lb, ω
+  @show k, Q, λ, λ/Lb, ω
   η₀ = 0.01
   ηᵢₙ(x) = η₀*exp(im*k*x[1])
   ϕᵢₙ(x) = -im*(η₀*ω/k)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
@@ -164,14 +164,12 @@ function run_Step(params::Step_params)
   x_coord_step = Ld + 0.5*Lb
   prbx = [(x_coord_step - 1.5*λ), (x_coord_step - 1.3*λ), (x_coord_step - λ), (x_coord_step + λ)]
   prbxy = [Point.(prbx, 0.0) for prbx in prbx]
-  prbxy = [prbxy[4]]      
+  prbxy = [prbxy[4]]    # for now only using probe after the step to obtain Κₜ  
 
   ## Κᵣ and Κₜ coefficients
-  # η_prb = [η_i[p_prb] for η_i in η_cdv]
-  # Κₜ = [(abs(η_i)^2)/(η₀^2) for η_i in vcat(η_prb...)]
   η_prb = ηₕ.(prbxy)
   @show Κₜ = (abs.(η_prb))/(η₀)
-  Κᵣ = sqrt.(1 .- Κₜ.^2)
+  # Κᵣ = sqrt.(1 .- Κₜ.^2)
 
   # exporting VTK output
   # writevtk(Γκ,filename*"_kappa",cellfields=["eta_re"=>real(κₕ),"eta_im"=>imag(κₕ)])
