@@ -1,11 +1,12 @@
 function run_tmp_Step()
   case = Step_params(
-    k=0.4,
-    T=0.0, 
-    Lb = 2*62.84,
-    Ld = 62.84,
-    xdₒᵤₜ = 3*62.84,
-    name="Step",mesh_file="floating_ice-step_ratio05.json")
+    ω = 1,
+    Q = 0, 
+    Lb = 520,
+    Ld = 130,
+    xdₒᵤₜ = 650,
+    name="Step",
+    mesh_file="floating_ice-step_ratio05_refined.json")
   x,η = run_Step(case)
 
   # Define execution function

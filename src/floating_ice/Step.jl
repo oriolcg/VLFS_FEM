@@ -12,17 +12,17 @@ export Step_params
 
 @with_kw struct Step_params
   name::String = "Step"
-  k::Real = 0.4
-  T::Float64 = 0.0
-  mesh_file::String = "floating_ice-step_ratio05.json"
-  Lb::Float64 = 125.68
+  ω::Real = 0.2
+  Q::Float64 = 0.0
+  mesh_file::String = "floating_ice-step_ratio05_final.json"
+  Lb::Float64 = 4*62.84
   Ld::Float64 = 62.84
-  xdₒᵤₜ::Float64 = 188.52
+  xdₒᵤₜ::Float64 = 5*62.84
 end
 
 function run_Step(params::Step_params)
 
-  @unpack name, k, T, mesh_file, Lb, Ld, xdₒᵤₜ = params
+  @unpack name, ω, Q, mesh_file, Lb, Ld, xdₒᵤₜ = params
 
   # Fixed parameters
   h_ice = 0.1
@@ -34,19 +34,21 @@ function run_Step(params::Step_params)
   EI = E*I/(1-ν^2)
   H₀ = 10.0
   
-
-
   # Physics
   g = 9.81
   ρ = 1025
   d₀ = m/(ρ*g)
   a₁ = EI/(ρ*g)
-  a₂ = T*√a₁                 # a₂ => Q = 1.4*√D with D = EI/ρg        
+  a₂ = Q*√a₁                 # a₂ => Q = 1.4*√D with D = EI/ρg        
 
   # wave properties
-  ω = √((a₁*k^4 - a₂*k^2 + 1) * g*k*tanh(k*H₀))
-  λ = 2*π / k                 # wavelength
-  @show k, Q, λ, λ/Lb, ω
+
+  f(k) = √((a₁*k^4 - a₂*k^2 + 1) * g*k*tanh(k*H₀)) - ω   # dispersion relation
+  k = abs(find_zero(f,0.5))       # wave number
+  λ = 2*π / k                     # wave length
+  @show ω, Q, k, λ, λ/Lb  
+
+
   η₀ = 0.01
   ηᵢₙ(x) = η₀*exp(im*k*x[1])
   ϕᵢₙ(x) = -im*(η₀*ω/k)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
@@ -62,7 +64,7 @@ function run_Step(params::Step_params)
   αₕ = -im*ω/g * (1-βₕ)/βₕ
 
   # Damping [method 5 (added terms dyn BC and kin BC), ramp function shape 1 - Kim(2014)]
-  μ₀ = 1000000.0
+  μ₀ = 2.5
   μ₁ᵢₙ(x) = μ₀*(1.0 - sin(π/2*(x[1])/Ld))
   μ₁ₒᵤₜ(x) = μ₀*(1.0 - cos(π/2*(x[1]-xdₒᵤₜ)/Ld))
   μ₂ᵢₙ(x) = μ₁ᵢₙ(x)*k
@@ -162,7 +164,7 @@ function run_Step(params::Step_params)
 
   ## probes
   x_coord_step = Ld + 0.5*Lb
-  prbx = [(x_coord_step - 1.5*λ), (x_coord_step - 1.3*λ), (x_coord_step - λ), (x_coord_step + λ)]
+  prbx = [(x_coord_step - 3*λ), (x_coord_step - 2.5*λ), (x_coord_step - 2λ), (x_coord_step + 2*λ)]
   prbxy = [Point.(prbx, 0.0) for prbx in prbx]
   prbxy = [prbxy[4]]    # for now only using probe after the step to obtain Κₜ  
 
