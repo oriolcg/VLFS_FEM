@@ -14,15 +14,17 @@ export Step_params
   name::String = "Step"
   ω::Real = 0.2
   Q::Float64 = 0.0
-  mesh_file::String = "floating_ice-step_ratio05_final.json"
-  Lb::Float64 = 4*62.84
-  Ld::Float64 = 62.84
-  xdₒᵤₜ::Float64 = 5*62.84
+  step_ratio::Float64 = 0.5
+  mesh_file::String = "floating_ice-Step05.json"
+  n_elements::Float64 = 4
+  Lb::Float64 = 520
+  Ld::Float64 = 130
+  xdₒᵤₜ::Float64 = 650
 end
 
 function run_Step(params::Step_params)
 
-  @unpack name, ω, Q, mesh_file, Lb, Ld, xdₒᵤₜ = params
+  @unpack name, ω, Q, step_ratio, mesh_file, n_elements, Lb, Ld, xdₒᵤₜ = params
 
   # Fixed parameters
   h_ice = 0.1
@@ -58,7 +60,7 @@ function run_Step(params::Step_params)
 
   # Numerics constants
   order = 4
-  h = 1/Lb
+  h = 1/(n_elements*Lb)
   γ = 100.0*order*(order-1)/h
   βₕ = 0.5
   αₕ = -im*ω/g * (1-βₕ)/βₕ
@@ -87,12 +89,14 @@ function run_Step(params::Step_params)
   Λb = Skeleton(Γ)
 
 
-  filename = "data/VTKOutput/floating_ice/Step/"*name
-  writevtk(Ω,filename*"_O_trian")
-  writevtk(Γb,filename*"_Gb_trian")
-  writevtk(Γd1,filename*"_Gd1_trian")
-  writevtk(Γd2,filename*"_Gd2_trian")
-  writevtk(Λb,filename*"_Lb_trian")
+  # filename = "data/VTKOutput/floating_ice/Step/"*name*"_the_order_is_$order"
+  
+  filename = "data/floating_ice/Step/"*name
+  writevtk(Ω,filename*"_O_trian.vtu")
+  writevtk(Γb,filename*"_Gb_trian.vtu")
+  writevtk(Γd1,filename*"_Gd1_trian.vtu")
+  writevtk(Γd2,filename*"_Gd2_trian.vtu")
+  writevtk(Λb,filename*"_Lb_trian.vtu")
 
   # Measures
   degree = 2*order
@@ -162,16 +166,16 @@ function run_Step(params::Step_params)
   η_rel_xs = [abs(η_i)/η₀ for η_i in vcat(η_cdv_sorted...)]
 
 
-  ## probes
-  x_coord_step = Ld + 0.5*Lb
-  prbx = [(x_coord_step - 3*λ), (x_coord_step - 2.5*λ), (x_coord_step - 2λ), (x_coord_step + 2*λ)]
-  prbxy = [Point.(prbx, 0.0) for prbx in prbx]
-  prbxy = [prbxy[4]]    # for now only using probe after the step to obtain Κₜ  
+  # ## probes
+  # x_coord_step = Ld + 0.5*Lb
+  # prbx = [(x_coord_step - 3*λ), (x_coord_step - 2.5*λ), (x_coord_step - 2λ), (x_coord_step + 2*λ)]
+  # prbxy = [Point.(prbx, 0.0) for prbx in prbx]
+  # prbxy = [prbxy[4]]    # for now only using probe after the step to obtain Κₜ  
 
-  ## Κᵣ and Κₜ coefficients
-  η_prb = ηₕ.(prbxy)
-  @show Κₜ = (abs.(η_prb))/(η₀)
-  # Κᵣ = sqrt.(1 .- Κₜ.^2)
+  # ## Κᵣ and Κₜ coefficients
+  # η_prb = ηₕ.(prbxy)
+  # @show Κₜ = (abs.(η_prb))/(η₀)
+  # # Κᵣ = sqrt.(1 .- Κₜ.^2)
 
   # exporting VTK output
   # writevtk(Γκ,filename*"_kappa",cellfields=["eta_re"=>real(κₕ),"eta_im"=>imag(κₕ)])

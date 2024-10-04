@@ -88,7 +88,8 @@ function run_tests(test::String)
   elseif test == "5-5-1" || test == "5-5-1-MultiGeo"
     run_5_5_1_MultiGeo()
   elseif test == "step"
-    run_tmp_Step()
+    run_tmp_Step(0.0)
+    run_tmp_Step.([1,3.5])
   else
     println("Test not found")
   end
