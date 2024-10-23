@@ -48,7 +48,8 @@ function run_Step(params::Step_params)
   # wave properties
 
   f(k) = √((a₁*k^4 - a₂*k^2 + 1) * g*k*tanh(k*H₀)) - ω   # dispersion relation
-  k = abs(find_zero(f,0.5))       # wave number
+  println(f(0.1))
+  k = abs(find_zero(f,0.1))       # wave number
   λ = 2*π / k                     # wave length
   @show ω, Q, k, λ, λ/Lb  
 

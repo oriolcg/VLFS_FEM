@@ -17,8 +17,8 @@ mesh_file = projectdir("models","floating_ice-Step05.json")
 name = "Step0.5_"
 
 allparams = Dict(
-    "ω" => [0.1,0.2],
-    "Q" => 0,     
+    "ω" => [0.4],
+    "Q" => [1.9],     
 )
 
 dicts = dict_list(allparams)
@@ -42,6 +42,19 @@ function makesim(d::Dict)
   x,η = run_Step(case)  
 
 end
+
+# Warmup case
+case_warmup = Step_params(
+  ω = 0.4,
+  Q = 0, 
+  Lb = 520,
+  Ld = 130,
+  xdₒᵤₜ = 650,
+  resDir = resDir,
+  name = "tmp",
+  mesh_file = projectdir("models","floating_ice-noStep_coarse.json"),
+  n_elements = 1)
+dummy_result = run_Step(case_warmup)
 
 for (i, d) in enumerate(dicts)
   result = makesim(d)  
