@@ -1,5 +1,6 @@
 module Step
 
+using Revise
 using Gridap
 using Gridap.Geometry
 using Gridap.FESpaces
@@ -21,6 +22,8 @@ export Step_params
   Lb::Float64 = 520
   Ld::Float64 = 130
   xdₒᵤₜ::Float64 = 650
+  kguess::Float64 = 0.5
+
 end
 
 function run_Step(params::Step_params)
@@ -45,16 +48,17 @@ function run_Step(params::Step_params)
   a₁ = EI/(ρ*g)
   a₂ = Q*√a₁                 # a₂ => Q = 1.4*√D with D = EI/ρg        
 
-  # wave properties
+  # # wave properties
 
   f(k) = √((a₁*k^4 - a₂*k^2 + 1) * g*k*tanh(k*H₀)) - ω   # dispersion relation
-  println(f(0.1))
-  k = abs(find_zero(f,0.1))       # wave number
+  # println(f(0.1))
+  @unpack kguess = params
+  @show kguess
+  k = abs(find_zero(f, kguess))       # wave number
   λ = 2*π / k                     # wave length
   @show ω, Q, k, λ, λ/Lb  
 
-
-  η₀ = 0.01
+  η₀ = 1
   ηᵢₙ(x) = η₀*exp(im*k*x[1])
   ϕᵢₙ(x) = -im*(η₀*ω/k)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
   vᵢₙ(x) = (η₀*ω)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])

@@ -1,6 +1,7 @@
 using DrWatson
 @quickactivate "MonolithicFEMVLFS"
 
+using Revise
 using Plots
 using LaTeXStrings
 using DataFrames
@@ -14,10 +15,10 @@ using .Step: Step_params, run_Step
 
 resDir = datadir("floating_ice","Step")
 mesh_file = projectdir("models","floating_ice-Step05.json")
-name = "Step0.5_"
+name = "0.5_k2_"
 
 allparams = Dict(
-    "ω" => [0.4],
+    "ω" => [0.8],
     "Q" => [1.9],     
 )
 
@@ -37,7 +38,8 @@ function makesim(d::Dict)
     resDir = resDir,
     name = lname,
     mesh_file = mesh_file,
-    n_elements = 4)
+    n_elements = 4, 
+    kguess = 0.3)
 
   x,η = run_Step(case)  
 
