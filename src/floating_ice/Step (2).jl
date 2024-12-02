@@ -20,10 +20,10 @@ export Step_params
   mesh_file::String = "floating_ice-Step05.json"
   n_elements::Float64 = 4
   Lₜₒₜ::Float64 = 780
-  # Lb::Float64 = 520
-  # Ld::Float64 = 130
-  # xdₒᵤₜ::Float64 = 650
-  kguess::Float64 = 0.5
+  Lb::Float64 = 520
+  Ld::Float64 = 130
+  xdₒᵤₜ::Float64 = 650
+  kguess::Float64 = 0.4
   μ₀::Float64 = 2.5
 
 end
@@ -59,9 +59,9 @@ function run_Step(params::Step_params)
   k = abs(find_zero(f, kguess))       # wave number
   λ = 2*π / k                         # wave length
 
-  Ld = 2*λ
-  Lb = Lₜₒₜ - 4*λ
-  xdₒᵤₜ = Lₜₒₜ - 2*λ
+  # Ld = 2*λ
+  # Lb = Lₜₒₜ - 4*λ
+  # xdₒᵤₜ = Lₜₒₜ - 2*λ
 
   @show ω, Q, k, λ, λ/Lb  
 
