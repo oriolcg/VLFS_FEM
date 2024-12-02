@@ -9,9 +9,9 @@ using DataFramesMeta
 using CSV
 
 
-include(srcdir("floating_ice","Step (2).jl"))
+include(srcdir("floating_ice","Step (4).jl"))
 
-using .Step: Step_params, run_Step
+# using .Step: Step_params, run_Step
 
 resDir = datadir("floating_ice","Step")
 mesh_file = projectdir("models","floating_ice-Step05.json")
@@ -29,34 +29,37 @@ function makesim(d::Dict)
   lname = name*savename(d)
   @show lname
 
-  case = Step_params(
+  case = Step.Step_params(
     ω = d["ω"],
-    Q = d["Q"], 
-    Lb = 520,
-    Ld = 130,
-    xdₒᵤₜ = 650,
+    Q = d["Q"],
+    Lₜₒₜ = 780,
+    # Lb = 520,
+    # Ld = 130,
+    # xdₒᵤₜ = 650,
     resDir = resDir,
     name = lname,
     mesh_file = mesh_file,
     n_elements = 4, 
-    kguess = 0.3)
+    kguess = [0.09, 0.29, 0.4],
+    μ₀ = 2.5)
 
-  x,η = run_Step(case)  
+  x,η = Step.run_Step(case)  
 
 end
 
 # Warmup case
-case_warmup = Step_params(
+case_warmup = Step.Step_params(
   ω = 0.4,
-  Q = 0, 
-  Lb = 520,
-  Ld = 130,
-  xdₒᵤₜ = 650,
+  Q = 0,
+  Lₜₒₜ = 780, 
+  # Lb = 520,
+  # Ld = 130,
+  # xdₒᵤₜ = 650,
   resDir = resDir,
   name = "tmp",
   mesh_file = projectdir("models","floating_ice-noStep_coarse.json"),
   n_elements = 1)
-dummy_result = run_Step(case_warmup)
+dummy_result = Step.run_Step(case_warmup)
 
 for (i, d) in enumerate(dicts)
   result = makesim(d)  
