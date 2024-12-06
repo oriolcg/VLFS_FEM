@@ -23,7 +23,7 @@ export Step_params
   # Lb::Float64 = 520
   # Ld::Float64 = 130
   # xdₒᵤₜ::Float64 = 650
-  kguess= [0.5, 0.5, 0.5]
+  kguess::Float64 = 0.5
   μ₀::Float64 = 2.5
 
 end
@@ -56,13 +56,7 @@ function run_Step(params::Step_params)
   # println(f(0.1))
   @unpack kguess = params
   @show kguess
-
-
-  @show k1 = abs(find_zero(f, kguess[1])) 
-  @show k2 = abs(find_zero(f, kguess[2])) 
-  @show k3 = abs(find_zero(f, kguess[3])) 
-
-  @show k = k1
+  k = abs(find_zero(f, kguess))       # wave number
   λ = 2*π / k                         # wave length
 
   Ld = 2*λ
@@ -72,20 +66,11 @@ function run_Step(params::Step_params)
   @show ω, Q, k, λ, λ/Lb  
 
   η₀ = 1
-  ηᵢₙ(x) = η₀*exp(im*k1*x[1]) + η₀*exp(im*k2*x[1]) + η₀*exp(im*k3*x[1])
-  μ2ηᵢₙ(x) = k1*η₀*exp(im*k1*x[1]) + k2*η₀*exp(im*k2*x[1]) + k3*η₀*exp(im*k3*x[1])
-  ϕᵢₙ(x) = -im*(η₀*ω/k1)*(cosh(k1*(x[2])) / sinh(k1*H₀))*exp(im*k1*x[1]) + 
-    -im*(η₀*ω/k2)*(cosh(k2*(x[2])) / sinh(k2*H₀))*exp(im*k2*x[1]) +
-    -im*(η₀*ω/k3)*(cosh(k3*(x[2])) / sinh(k3*H₀))*exp(im*k3*x[1])
-  vᵢₙ(x) = (η₀*ω)*(cosh(k1*(x[2])) / sinh(k1*H₀))*exp(im*k1*x[1]) + 
-    (η₀*ω)*(cosh(k2*(x[2])) / sinh(k2*H₀))*exp(im*k2*x[1]) + 
-    (η₀*ω)*(cosh(k3*(x[2])) / sinh(k3*H₀))*exp(im*k3*x[1])
-  vzᵢₙ(x) = -im*ω*η₀*exp(im*k1*x[1]) + 
-    -im*ω*η₀*exp(im*k2*x[1]) +
-    -im*ω*η₀*exp(im*k3*x[1])
-  ∇ϕᵢₙ(x) = VectorValue(k1*(η₀*ω/k1)*(cosh(k1*(x[2])) / sinh(k1*H₀))*exp(im*k1*x[1]), -im*(η₀*ω)*(sinh(k1*(x[2])) / sinh(k1*H₀))*exp(im*k1*x[1])) + 
-    VectorValue(k2*(η₀*ω/k2)*(cosh(k2*(x[2])) / sinh(k2*H₀))*exp(im*k2*x[1]), -im*(η₀*ω)*(sinh(k2*(x[2])) / sinh(k2*H₀))*exp(im*k2*x[1])) + 
-    VectorValue(k3*(η₀*ω/k3)*(cosh(k3*(x[2])) / sinh(k3*H₀))*exp(im*k3*x[1]), -im*(η₀*ω)*(sinh(k3*(x[2])) / sinh(k3*H₀))*exp(im*k3*x[1]))
+  ηᵢₙ(x) = η₀*exp(im*k*x[1])
+  ϕᵢₙ(x) = -im*(η₀*ω/k)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
+  vᵢₙ(x) = (η₀*ω)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1])
+  vzᵢₙ(x) = -im*ω*η₀*exp(im*k*x[1])
+  ∇ϕᵢₙ(x) = VectorValue(k*(η₀*ω/k)*(cosh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1]), -im*(η₀*ω)*(sinh(k*(x[2])) / sinh(k*H₀))*exp(im*k*x[1]))
 
   # Numerics constants
   
@@ -98,10 +83,10 @@ function run_Step(params::Step_params)
   # Damping [method 5 (added terms dyn BC and kin BC), ramp function shape 1 - Kim(2014)]
   @unpack μ₀ = params
   @show μ₀
-  μ₁ᵢₙ(x) = μ₀*(1.0 - sin(π/2*(x[1])/Ld))
-  μ₁ₒᵤₜ(x) = μ₀*(1.0 - cos(π/2*(x[1]-xdₒᵤₜ)/Ld))
-  μ₂ᵢₙ(x) = μ₁ᵢₙ(x)*k
-  μ₂ₒᵤₜ(x) = μ₁ₒᵤₜ(x)*k
+  # μ₁ᵢₙ(x) = μ₀*(1.0 - sin(π/2*(x[1])/Ld))
+  # μ₁ₒᵤₜ(x) = μ₀*(1.0 - cos(π/2*(x[1]-xdₒᵤₜ)/Ld))
+  # μ₂ᵢₙ(x) = μ₁ᵢₙ(x)*k
+  # μ₂ₒᵤₜ(x) = μ₁ₒᵤₜ(x)*k
 #   ηd(x) = μ₂ᵢₙ(x)*ηᵢₙ(x)
 #   ∇ₙϕd(x) = μ₁ᵢₙ(x)*vzᵢₙ(x)
 
@@ -118,6 +103,7 @@ function run_Step(params::Step_params)
         return 0.0    
     end
   end
+
   function μ1inNew(x)
     local xr
     xr = x[1]/Ld    
@@ -128,9 +114,10 @@ function run_Step(params::Step_params)
         return 0.0    
     end
   end
-  
-  μ2all(x) = μ1all(x)*k
-  ηd(x) = μ1inNew(x) * μ2ηᵢₙ(x)
+
+  add_term = 0.5*((4*k*g +2) + √((4*k*g +2)^2 - 4))
+  μ2all(x) = μ1all(x)*k *add_term
+  ηd(x) = μ1inNew(x) * k *add_term*ηᵢₙ(x)
   ∇ₙϕd(x) = μ1inNew(x)*vzᵢₙ(x)
   
 
@@ -198,12 +185,15 @@ function run_Step(params::Step_params)
   # l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
 
 
+  @show 124
+
+
   # Weak form (bending + tensile force)
   ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
   a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
 #   ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
 #   ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
-  ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ2all*η*w +(1/g)*(μ1all*∇ₙ(ϕ)*v)  )dΓb  +
+  ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ2all*η*w + (μ1all*∇ₙ(ϕ)*v)  )dΓb  +
   ∫(  a₁*( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
   l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓb
 
@@ -240,6 +230,7 @@ function run_Step(params::Step_params)
   # writevtk(Γκ,filename*"_kappa",cellfields=["eta_re"=>real(κₕ),"eta_im"=>imag(κₕ)])
   writevtk(Γ,filename*"_eta.vtu",cellfields=["eta_re"=>real(ηₕ),"eta_im"=>imag(ηₕ)])
   writevtk(Ω,filename*"_phi.vtu",cellfields=["phi_re"=>real(ϕₕ),"phi_im"=>imag(ϕₕ)])
+  writevtk(Γ,filename*"_eta_in.vtu",cellfields=["eta_re"=>x->real(ηᵢₙ(x)),"eta_im"=>x->imag(ηᵢₙ(x))])
 
   return (xs,η_rel_xs)
 

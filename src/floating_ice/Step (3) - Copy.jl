@@ -108,7 +108,7 @@ function run_Step(params::Step_params)
     end
   end
 
- add_term = 0.5*((4*k*g +2) + √((4*k*g +2)^2 - 4))
+  add_term = 0.5*((4*k*g +2) + √((4*k*g +2)^2 - 4))
 
   μ₂ᵢₙ(x) = μ₁ᵢₙ(x)*k*add_term
   μ₂ₒᵤₜ(x) = μ₁ₒᵤₜ(x)*k*add_term

@@ -30,7 +30,7 @@ end
 
 function run_Step(params::Step_params)
 
-  @unpack name, ω, Q, step_ratio, mesh_file, n_elements, Lₜₒₜ = params
+  @unpack name, ω, Q, step_ratio, mesh_file, n_elements, Lb, Ld, xdₒᵤₜ= params
   @unpack resDir = params
 
   # Fixed parameters
@@ -63,7 +63,7 @@ function run_Step(params::Step_params)
   # Lb = Lₜₒₜ - 4*λ
   # xdₒᵤₜ = Lₜₒₜ - 2*λ
 
-  @show ω, Q, k, λ, λ/Lb  
+  @show ω, Q, k, λ, λ/Lb 
 
   η₀ = 1
   ηᵢₙ(x) = η₀*exp(im*k*x[1])
@@ -154,12 +154,13 @@ function run_Step(params::Step_params)
   # l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
 
 
-
+  @show 123
+  
   # Weak form (bending + tensile force)
   ∇ₙ(ϕ) = ∇(ϕ)⋅VectorValue(0.0,1.0)
   a((ϕ,η),(w,v)) = ∫(  ∇(w)⋅∇(ϕ) )dΩ   +
-  ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ᵢₙ*η*w + μ₁ᵢₙ*∇ₙ(ϕ)*v )dΓd1    +
-  ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + μ₁ₒᵤₜ*∇ₙ(ϕ)*v )dΓd2   +
+  ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ᵢₙ*η*w + ((1/g)*μ₁ᵢₙ*∇ₙ(ϕ)*v) )dΓd1    +
+  ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η - μ₂ₒᵤₜ*η*w + ((1/g)*μ₁ₒᵤₜ*∇ₙ(ϕ)*v) )dΓd2   +
   ∫(  v*((-ω^2*d₀ + 1)*η - im*ω/g*ϕ) + a₁*Δ(v)*Δ(η) + a₂*∇(v)⋅∇(η) + im*ω*w*η  )dΓb  +
   ∫(  a₁*( - jump(∇(v)⋅nΛb) * mean(Δ(η)) - mean(Δ(v)) * jump(∇(η)⋅nΛb) + γ*( jump(∇(v)⋅nΛb) * jump(∇(η)⋅nΛb) ) ) )dΛb
   l((w,v)) =  ∫( w*vᵢₙ )dΓᵢₙ - ∫( ηd*w - ∇ₙϕd*v )dΓd1
@@ -181,17 +182,6 @@ function run_Step(params::Step_params)
   xs = [(x_i-6*Lb)/Lb for x_i in vcat(x_cp_sorted...)]
   η_rel_xs = [abs(η_i)/η₀ for η_i in vcat(η_cdv_sorted...)]
 
-
-  # ## probes
-  # x_coord_step = Ld + 0.5*Lb
-  # prbx = [(x_coord_step - 3*λ), (x_coord_step - 2.5*λ), (x_coord_step - 2λ), (x_coord_step + 2*λ)]
-  # prbxy = [Point.(prbx, 0.0) for prbx in prbx]
-  # prbxy = [prbxy[4]]    # for now only using probe after the step to obtain Κₜ  
-
-  # ## Κᵣ and Κₜ coefficients
-  # η_prb = ηₕ.(prbxy)
-  # @show Κₜ = (abs.(η_prb))/(η₀)
-  # # Κᵣ = sqrt.(1 .- Κₜ.^2)
 
   # exporting VTK output
   # writevtk(Γκ,filename*"_kappa",cellfields=["eta_re"=>real(κₕ),"eta_im"=>imag(κₕ)])
