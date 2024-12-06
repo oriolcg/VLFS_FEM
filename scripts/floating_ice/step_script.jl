@@ -1,13 +1,15 @@
-function run_tmp_Step()
-  case = Step_params(k=0.2,name="Step")
-  x,η = run_Step(case)
+function run_tmp_Step(ω_in)
   case = Step_params(
-    k=0.3,
-    Lb = 70.0,
-    Ld_Lb = 2.0,
-    xdₒᵤₜ_Lb= 3.0,
-    name="Step",mesh_file="floating_ice_modified_step50.json")
+    ω = ω_in,
+    Q = 0, 
+    Lb = 520,
+    Ld = 130,
+    xdₒᵤₜ = 650,
+    name="Step0.5-Q0-omega$ω_in",
+    mesh_file="floating_ice-Step05.json",
+    n_elements = 4)
   x,η = run_Step(case)
+
 
   # Define execution function
   function run_tmp_step(case::Step_params)
@@ -24,11 +26,41 @@ function run_tmp_Step()
     return data
   end
 
-  # # Case 1: k=0.2
-  # path = datadir("floating/Step")
-  # case = Step_params(k=0.2,name="step=0.5-Q=0-k=0.2")
+  # # Case 1: depth_ratio=0.5  Q=0  k=0.4 
+  # path = datadir("floating_ice")
+  # case = Step_params(
+  #   k=0.4,
+  #   Lb = 70.0,
+  #   Ld_Lb = 2,
+  #   xdₒᵤₜ_Lb= 3,
+  #   name="Step-mod-05-Q0-k04",mesh_file="floating_ice-step_ratio05.json")
   # @show case
   # data, file = produce_or_load(path,case,run_tmp_step)
+
+
+
+  # # Case 1: depth_ratio=0.5  Q=0  k=0.4 
+  # path = datadir("floating_ice")
+  # case = Step_params(
+  #   k=0.4,
+  #   Lb = 70.0,
+  #   Ld_Lb = 2,
+  #   xdₒᵤₜ_Lb= 3,
+  #   name="Step-mod-05-Q0-k04",mesh_file="floating_ice-step_ratio05.json")
+  # @show case
+  # data, file = produce_or_load(path,case,run_tmp_step)
+
+
+  # # Case 2: depth_ratio=0.5  Q=0  k=0.4 
+  # case = Step_params(
+  #   k=0.4,
+  #   Lb = 70.0,
+  #   Ld_Lb = 2,
+  #   xdₒᵤₜ_Lb= 3,
+  #   name="Step05-Q0-k04",mesh_file="floating_ice_modified_step50.json")
+  # @show case
+  # data, file = produce_or_load(path,case,run_tmp_step)
+
 
   # # Case 2: ω=0.8
   # case = Liu_params(ω=0.8,name="omega-08")
@@ -39,40 +71,6 @@ function run_tmp_Step()
   # res = collect_results(path)]
 
 
-  # # Reference data
-  # Liu_data_04 = CSV.File(datadir("Ref_data/Liu","omega_04.csv");header=false)
-  # Liu_data_08 = CSV.File(datadir("Ref_data/Liu","omega_08.csv");header=false)
 
-  # # Plot case 1
-  # res1 = @linq res |> where(:ω .== 0.4)
-  # xs1 = res1[!,:x][1]
-  # η_xs1 = res1[!,:η][1]
-  # p = sortperm(xs1)
-  # plt1 = plot(xs1[p],η_xs1[p],
-  #             xlims=(0,1),
-  #             ylims=(0.6,1.4),
-  #             lw=2,
-  #             label="Monolithic CG/DG",
-  #             palette=:rainbow)
-  # plot!(plt1,Liu_data_04.Column1,Liu_data_04.Column2,marker="o",line=false,label="Liu et al.")
-  # xlabel!("x/L")
-  # ylabel!("|η|/η₀")
-  # savefig(plt1, plotsdir("5-3-1-Liu","omega_04"))
-
-  # # Plot case 2
-  # res1 = @linq res |> where(:ω .== 0.8)
-  # xs1 = res1[!,:x][1]
-  # η_xs1 = res1[!,:η][1]
-  # p = sortperm(xs1)
-  # plt1 = plot(xs1[p],η_xs1[p],
-  #             xlims=(0,1),
-  #             ylims=(0,1.2),
-  #             lw=2,
-  #             label="Monolithic CG/DG",
-  #             palette=:rainbow)
-  # plot!(plt1,Liu_data_08.Column1,Liu_data_08.Column2,marker="o",line=false,label="Liu et al.")
-  # xlabel!("x/L")
-  # ylabel!("|η|/η₀")
-  # savefig(plt1, plotsdir("5-3-1-Liu","omega_08"))
 
 end
